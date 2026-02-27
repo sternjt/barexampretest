@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🇺🇸 Civics Challenge!</title>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #1a56db;
+    --red: #e02424;
+    --gold: #f59e0b;
+    --green: #16a34a;
+    --bg: #eef2ff;
+    --purple: #7c3aed;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  .star {
+    position: fixed;
+    pointer-events: none;
+    animation: floatStar linear infinite;
+    opacity: 0.18;
+    z-index: 0;
+  }
+  @keyframes floatStar {
+    0% { transform: translateY(110vh) rotate(0deg); }
+    100% { transform: translateY(-10vh) rotate(360deg); }
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a56db 0%, #7c3aed 100%);
+    padding: 2rem 1rem 1.5rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+    z-index: 1;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: -1px; left: 0; right: 0;
+    height: 30px;
+    background: var(--bg);
+    clip-path: ellipse(55% 100% at 50% 100%);
+  }
+
+  .header-emoji {
+    font-size: 3.5rem;
+    display: block;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  header h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    color: white;
+    text-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+    margin-top: 0.3rem;
+  }
+  header p {
+    color: rgba(255,255,255,0.85);
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: 0.4rem;
+  }
+
+  .score-tracker {
+    display: flex;
+    justify-content: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    padding: 1.2rem 1rem 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+  .tracker-pill {
+    background: white;
+    border-radius: 50px;
+    padding: 0.5rem 1.2rem;
+    font-weight: 800;
+    font-size: 0.95rem;
+    box-shadow: 0 3px 12px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .tracker-pill.correct  { color: var(--green); border: 2.5px solid var(--green); }
+  .tracker-pill.incorrect{ color: var(--red);   border: 2.5px solid var(--red); }
+  .tracker-pill.remaining{ color: var(--blue);  border: 2.5px solid var(--blue); }
+
+  .progress-wrap {
+    max-width: 700px;
+    margin: 0.8rem auto 0;
+    padding: 0 1.5rem;
+    position: relative;
+    z-index: 1;
+  }
+  .progress-track {
+    background: #d1d5db;
+    height: 16px;
+    border-radius: 50px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #f97316);
+    border-radius: 50px;
+    transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    position: relative; overflow: hidden;
+  }
+  .progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: shimmer 1.5s infinite;
+  }
+  @keyframes shimmer { to { left: 100%; } }
+
+  .progress-label {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #6b7280;
+    margin-top: 0.4rem;
+  }
+
+  /* ── SINGLE QUESTION STAGE ── */
+  #stage {
+    max-width: 700px;
+    margin: 2rem auto 3rem;
+    padding: 0 1.2rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .question-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.1);
+    border: 3px solid transparent;
+    position: relative;
+  }
+
+  /* slide-in animation */
+  .slide-in {
+    animation: slideIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  .slide-out-left {
+    animation: slideOutLeft 0.3s ease forwards;
+  }
+  .slide-out-right {
+    animation: slideOutRight 0.3s ease forwards;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateX(60px) scale(0.95); }
+    to   { opacity: 1; transform: translateX(0)   scale(1); }
+  }
+  @keyframes slideOutLeft {
+    to { opacity: 0; transform: translateX(-60px) scale(0.95); }
+  }
+  @keyframes slideOutRight {
+    to { opacity: 0; transform: translateX(60px) scale(0.95); }
+  }
+
+  .q-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .q-badge {
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: white;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    border-radius: 50px;
+    padding: 0.3rem 1rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .q-text {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.5;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  @media (max-width: 500px) { .options { grid-template-columns: 1fr; } }
+
+  .option-label {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.8rem 1rem;
+    border-radius: 14px;
+    border: 2.5px solid #e5e7eb;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.18s;
+    background: white;
+    line-height: 1.3;
+    user-select: none;
+  }
+  .option-label:hover { border-color: var(--blue); background: #eff6ff; transform: scale(1.02); }
+  .option-label input { display: none; }
+
+  .option-letter {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #374151;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.9rem;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.18s;
+  }
+  .option-label:hover .option-letter { background: var(--blue); color: white; }
+  .option-label.selected { border-color: var(--blue); background: #eff6ff; }
+  .option-label.selected .option-letter { background: var(--blue); color: white; }
+
+  /* nav buttons */
+  .nav-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-nav {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.05rem;
+    border: none;
+    border-radius: 50px;
+    padding: 0.7rem 1.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .btn-prev {
+    background: #e5e7eb;
+    color: #374151;
+  }
+  .btn-prev:hover { background: #d1d5db; transform: translateX(-2px); }
+  .btn-prev:disabled { opacity: 0.35; cursor: not-allowed; transform: none; }
+
+  .btn-next {
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: white;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+  }
+  .btn-next:hover { transform: translateX(2px) scale(1.04); box-shadow: 0 6px 22px rgba(124,58,237,0.45); }
+
+  .btn-submit-final {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    background: linear-gradient(135deg, #f59e0b, #f97316);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.75rem 2rem;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(249,115,22,0.4);
+    transition: all 0.2s;
+    position: relative; overflow: hidden;
+  }
+  .btn-submit-final:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(249,115,22,0.5); }
+  .btn-submit-final::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+    transform: translateX(-100%);
+    animation: btnShimmer 2s infinite;
+  }
+  @keyframes btnShimmer { to { transform: translateX(100%); } }
+
+  .warn-msg {
+    color: var(--red); font-weight: 700; font-size: 0.9rem;
+    margin-top: 0.6rem; display: none; text-align: center;
+    animation: shake 0.4s ease;
+  }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+  .warn-msg.show { display: block; }
+
+  /* dot navigator */
+  .dot-nav {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 1.2rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 1rem;
+    position: relative;
+    z-index: 1;
+  }
+  .dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #d1d5db;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 2px solid transparent;
+  }
+  .dot.answered  { background: var(--blue); }
+  .dot.current   { border-color: var(--gold); transform: scale(1.35); }
+  .dot.answered.current { background: var(--blue); }
+
+  /* ── REVIEW SECTION ── */
+  #review-section { display: none; position: relative; z-index: 1; padding: 1rem 1.2rem 2rem; }
+
+  .review-title {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: var(--navy);
+    text-align: center;
+    margin-bottom: 1.2rem;
+    color: #1e293b;
+  }
+
+  .review-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.07);
+    border-left: 6px solid transparent;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+    animation: popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.93); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  .review-card.correct-card { border-left-color: var(--green); background: #f0fdf4; }
+  .review-card.wrong-card   { border-left-color: var(--red);   background: #fff5f5; }
+
+  .review-q {
+    font-weight: 700; font-size: 0.98rem; color: #1e293b; margin-bottom: 0.6rem;
+    display: flex; gap: 0.6rem; align-items: flex-start;
+  }
+  .review-qnum {
+    font-family: 'Fredoka One', cursive;
+    background: #e5e7eb;
+    color: #374151;
+    border-radius: 50px;
+    padding: 0.1rem 0.65rem;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .review-answers { font-size: 0.92rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .review-your { color: #374151; }
+  .review-your span { font-weight: 700; }
+  .review-correct-ans { color: var(--green); font-weight: 700; }
+  .review-result-icon { font-size: 1.3rem; float: right; margin-left: 0.5rem; }
+
+  /* ── CERTIFICATE ── */
+  #certificate-section { display: none; position: relative; z-index: 1; padding: 1rem 1.2rem 3rem; }
+
+  .cert-outer { max-width: 660px; margin: 0 auto; }
+
+  .certificate {
+    background: white;
+    border-radius: 24px;
+    padding: 2.5rem 2rem;
+    text-align: center;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.15);
+    position: relative; overflow: hidden;
+    animation: popIn 0.6s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  .cert-ribbon { position: absolute; top: 0; left: 0; right: 0; height: 8px; }
+  .cert-ribbon.pass { background: linear-gradient(90deg, #16a34a, #22c55e, #16a34a); }
+  .cert-ribbon.fail { background: linear-gradient(90deg, #dc2626, #f87171, #dc2626); }
+
+  .cert-big-emoji { font-size: 5rem; margin: 0.5rem 0; display: block; animation: wiggle 1s ease 0.5s; }
+  @keyframes wiggle {
+    0%,100% { transform: rotate(0deg); }
+    25% { transform: rotate(-15deg); }
+    75% { transform: rotate(15deg); }
+  }
+
+  .cert-title { font-family: 'Fredoka One', cursive; font-size: clamp(1.6rem,4vw,2.4rem); margin-bottom: 0.5rem; }
+  .cert-title.pass { color: var(--green); }
+  .cert-title.fail { color: var(--red); }
+
+  .cert-score-ring {
+    width: 130px; height: 130px;
+    border-radius: 50%;
+    margin: 1.2rem auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Fredoka One', cursive;
+    border: 8px solid;
+  }
+  .cert-score-ring.pass { border-color: var(--green); color: var(--green); background: #f0fdf4; }
+  .cert-score-ring.fail { border-color: var(--red);   color: var(--red);   background: #fff5f5; }
+
+  .ring-score { font-size: 2.8rem; line-height: 1; }
+  .ring-label { font-size: 0.75rem; font-weight: 700; color: #6b7280; font-family: 'Nunito', sans-serif; }
+
+  .cert-message { font-size: 1.05rem; color: #374151; line-height: 1.65; max-width: 460px; margin: 0 auto 1.5rem; font-weight: 600; }
+  .cert-stars { font-size: 1.8rem; margin: 0.5rem 0 1rem; letter-spacing: 0.3rem; }
+  .medals { font-size: 1.3rem; margin-bottom: 0.5rem; }
+
+  .name-line-wrap { border-top: 2px dashed #e5e7eb; margin: 1.2rem 0 0.5rem; padding-top: 1rem; }
+  .name-line { border-bottom: 2px solid #9ca3af; max-width: 260px; margin: 0.3rem auto 0.25rem; padding-bottom: 4px; font-style: italic; color: #9ca3af; font-size: 0.85rem; }
+  .cert-footer { font-size: 0.75rem; color: #9ca3af; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 0.3rem; }
+
+  .btn-retry {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    color: white; border: none; border-radius: 50px;
+    padding: 0.9rem 2.5rem; cursor: pointer;
+    box-shadow: 0 6px 24px rgba(124,58,237,0.35);
+    margin-top: 1.5rem; display: none; transition: all 0.2s;
+  }
+  .btn-retry:hover { transform: translateY(-3px) scale(1.04); }
+
+  #confetti-canvas { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+
+  .pop { position: fixed; pointer-events:none; font-size:1.8rem; animation: popFly 1s ease forwards; z-index:9998; }
+  @keyframes popFly {
+    0%   { opacity:1; transform:translateY(0) scale(1); }
+    100% { opacity:0; transform:translateY(-120px) scale(0.3); }
+  }
+
+  .section-divider {
+    max-width: 700px;
+    margin: 0.5rem auto 1.5rem;
+    border: none;
+    border-top: 3px dashed #c7d2fe;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="confetti-canvas"></canvas>
+
+<header>
+  <span class="header-emoji">🇺🇸</span>
+  <h1>U.S. Civics Challenge!</h1>
+  <p>Answer all 20 questions — can you score 18 or higher? 🎯</p>
+</header>
+
+<div class="score-tracker">
+  <div class="tracker-pill correct">✅ Correct: <span id="score-correct">0</span></div>
+  <div class="tracker-pill incorrect">❌ Wrong: <span id="score-wrong">0</span></div>
+  <div class="tracker-pill remaining">📝 Left: <span id="score-left">20</span></div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+  </div>
+  <div class="progress-label" id="progress-label">0 of 20 answered</div>
+</div>
+
+<!-- dot navigator -->
+<div class="dot-nav" id="dot-nav"></div>
+
+<!-- Single question stage -->
+<div id="stage">
+  <div class="question-card slide-in" id="question-card">
+    <!-- filled by JS -->
+  </div>
+  <div class="warn-msg" id="warn-msg">⚠️ Pick an answer to continue!</div>
+
+  <div class="nav-row" id="nav-row">
+    <button class="btn-nav btn-prev" id="btn-prev" onclick="goTo(currentIndex - 1)" disabled>← Back</button>
+    <button class="btn-nav btn-next" id="btn-next" onclick="nextQuestion()">Next →</button>
+  </div>
+</div>
+
+<!-- Review all answers -->
+<div id="review-section">
+  <hr class="section-divider">
+  <h2 class="review-title">📋 Answer Review</h2>
+  <div id="review-cards"></div>
+</div>
+
+<!-- Certificate -->
+<div id="certificate-section">
+  <div class="cert-outer">
+    <div class="certificate" id="certificate">
+      <div class="cert-ribbon" id="cert-ribbon"></div>
+      <span class="cert-big-emoji" id="cert-emoji"></span>
+      <h2 class="cert-title" id="cert-title"></h2>
+      <div class="cert-score-ring" id="cert-ring">
+        <div class="ring-score" id="ring-score"></div>
+        <div class="ring-label">out of 20</div>
+      </div>
+      <div class="medals" id="cert-medals"></div>
+      <p class="cert-message" id="cert-message"></p>
+      <div class="cert-stars" id="cert-stars"></div>
+      <div class="name-line-wrap">
+        <div class="name-line">Student Name</div>
+        <div class="cert-footer">🇺🇸 U.S. Civics Pretest · Practice Edition 🇺🇸</div>
+      </div>
+    </div>
+    <div style="text-align:center">
+      <button class="btn-retry" id="retry-btn" onclick="retryQuiz()">🔀 Shuffle &amp; Try Again!</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── FLOATING STARS ──────────────────────────────────────────────
+const emojis = ['⭐','🌟','✨','🦅','🗽','🏛️','📜'];
+for (let i = 0; i < 14; i++) {
+  const el = document.createElement('div');
+  el.className = 'star';
+  el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+  el.style.left = Math.random() * 100 + 'vw';
+  el.style.animationDuration = (12 + Math.random() * 20) + 's';
+  el.style.animationDelay = (-Math.random() * 20) + 's';
+  el.style.fontSize = (1 + Math.random()) + 'rem';
+  document.body.appendChild(el);
+}
+
+// ── DATA ────────────────────────────────────────────────────────
+const allQuestions = [
+  { q: "Which branch of government can print money and mint coins?", options: ["The President","The Supreme Court","Congress","The Federal Reserve"], answer: 2 },
+  { q: "What title is given to the top commander of the U.S. armed forces?", options: ["Secretary of Defense","Chairman of the Joint Chiefs","Commander in Chief (The President)","Senate Majority Leader"], answer: 2 },
+  { q: "How long is one term for a U.S. House of Representatives member?", options: ["4 years","6 years","2 years","8 years"], answer: 2 },
+  { q: "How long does the President of the United States serve per term?", options: ["2 years","6 years","8 years","4 years"], answer: 3 },
+  { q: "What is the minimum age to serve as President of the United States?", options: ["25 years old","40 years old","30 years old","35 years old"], answer: 3 },
+  { q: "Bills that raise taxes must originate in which chamber of Congress?", options: ["The Senate","The Supreme Court","The House of Representatives","The Cabinet"], answer: 2 },
+  { q: "When the President nominates a federal judge, who must confirm them?", options: ["The House of Representatives","The Senate","The Supreme Court","The Electoral College"], answer: 1 },
+  { q: "Which body has the sole power to formally declare war on another nation?", options: ["The President","The Joint Chiefs of Staff","The Secretary of State","Congress"], answer: 3 },
+  { q: "What power lets the President reject a law passed by Congress?", options: ["Executive order","Filibuster","Veto","Judicial review"], answer: 2 },
+  { q: "How many times has the U.S. Constitution been formally amended?", options: ["10","21","27","33"], answer: 2 },
+  { q: "How many total members make up the U.S. Congress (both chambers combined)?", options: ["435","100","535","600"], answer: 2 },
+  { q: "What is considered the 'supreme law of the land' in the United States?", options: ["The Declaration of Independence","The Bill of Rights","The Federalist Papers","The U.S. Constitution"], answer: 3 },
+  { q: "Who holds the power to nominate ambassadors and cabinet members?", options: ["Congress","The Vice President","The President","The Senate"], answer: 2 },
+  { q: "A candidate for the U.S. Senate must be at least how old?", options: ["25 years old","35 years old","21 years old","30 years old"], answer: 3 },
+  { q: "What fraction of U.S. states must ratify an amendment to the Constitution?", options: ["Two-thirds","One-half","Three-quarters","All 50 states"], answer: 2 },
+  { q: "Into how many separate branches is the U.S. government divided?", options: ["2","4","3","5"], answer: 2 },
+  { q: "When two U.S. states have a legal dispute, which court resolves it?", options: ["A federal district court","The Court of Appeals","The U.S. Supreme Court","Congress"], answer: 2 },
+  { q: "How long do U.S. Supreme Court Justices serve (assuming good behavior)?", options: ["10-year terms","Until age 70","For life","6-year terms"], answer: 2 },
+  { q: "How long is one term for a U.S. Senator?", options: ["4 years","2 years","8 years","6 years"], answer: 3 },
+  { q: "How many Justices sit on the U.S. Supreme Court?", options: ["7","11","9","12"], answer: 2 }
+];
+
+const letters = ['A','B','C','D'];
+let questions = [];
+let currentIndex = 0;
+let userAnswers = [];   // null = unanswered
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+// ── INIT ────────────────────────────────────────────────────────
+function initQuiz(qs) {
+  questions = qs;
+  currentIndex = 0;
+  userAnswers = new Array(questions.length).fill(null);
+  document.getElementById('review-section').style.display = 'none';
+  document.getElementById('certificate-section').style.display = 'none';
+  document.getElementById('retry-btn').style.display = 'none';
+  document.getElementById('stage').style.display = 'block';
+  document.getElementById('dot-nav').style.display = 'flex';
+  buildDots();
+  renderQuestion(0, 'in');
+  updateTracker();
+}
+
+// ── DOTS ────────────────────────────────────────────────────────
+function buildDots() {
+  const nav = document.getElementById('dot-nav');
+  nav.innerHTML = '';
+  questions.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.title = `Question ${i+1}`;
+    d.onclick = () => goTo(i);
+    nav.appendChild(d);
+  });
+  refreshDots();
+}
+
+function refreshDots() {
+  const dots = document.querySelectorAll('.dot');
+  dots.forEach((d, i) => {
+    d.className = 'dot';
+    if (userAnswers[i] !== null) d.classList.add('answered');
+    if (i === currentIndex) d.classList.add('current');
+  });
+}
+
+// ── RENDER ──────────────────────────────────────────────────────
+function renderQuestion(idx, dir) {
+  currentIndex = idx;
+  const q = questions[idx];
+  const card = document.getElementById('question-card');
+
+  // animation direction
+  card.className = 'question-card';
+  void card.offsetWidth; // reflow
+  card.classList.add(dir === 'in' ? 'slide-in' : (dir === 'forward' ? 'slide-in' : 'slide-in'));
+
+  card.innerHTML = `
+    <div class="q-header">
+      <span class="q-badge">Q${idx+1} of ${questions.length}</span>
+      <div class="q-text">${q.q}</div>
+    </div>
+    <div class="options" id="options-wrap">
+      ${q.options.map((opt, j) => `
+        <label class="option-label${userAnswers[idx]===j?' selected':''}" id="opt-${j}" onclick="selectAnswer(${j})">
+          <input type="radio" name="curr" value="${j}" ${userAnswers[idx]===j?'checked':''}>
+          <span class="option-letter">${letters[j]}</span>
+          <span>${opt}</span>
+        </label>
+      `).join('')}
+    </div>
+  `;
+
+  // prev / next buttons
+  document.getElementById('btn-prev').disabled = idx === 0;
+
+  const btnNext = document.getElementById('btn-next');
+  const isLast = idx === questions.length - 1;
+  btnNext.innerHTML = isLast ? '🚀 Submit Quiz!' : 'Next →';
+  btnNext.className = isLast ? 'btn-nav btn-submit-final' : 'btn-nav btn-next';
+
+  document.getElementById('warn-msg').classList.remove('show');
+  refreshDots();
+  updateProgress();
+}
+
+// ── SELECT ANSWER ───────────────────────────────────────────────
+function selectAnswer(j) {
+  userAnswers[currentIndex] = j;
+  document.querySelectorAll('.option-label').forEach((l, i) => {
+    l.className = 'option-label' + (i === j ? ' selected' : '');
+  });
+  document.getElementById('warn-msg').classList.remove('show');
+  refreshDots();
+  updateTracker();
+  updateProgress();
+  spawnPop(document.getElementById(`opt-${j}`), '👆');
+}
+
+// ── NAVIGATION ──────────────────────────────────────────────────
+function nextQuestion() {
+  const isLast = currentIndex === questions.length - 1;
+
+  if (userAnswers[currentIndex] === null) {
+    const msg = document.getElementById('warn-msg');
+    msg.classList.add('show');
+    msg.style.animation='none'; void msg.offsetWidth; msg.style.animation='';
+    return;
+  }
+
+  if (isLast) {
+    // check all answered
+    const missing = userAnswers.findIndex(a => a === null);
+    if (missing !== -1) {
+      goTo(missing);
+      setTimeout(() => {
+        const msg = document.getElementById('warn-msg');
+        msg.textContent = `⚠️ You skipped question ${missing+1} — answer it first!`;
+        msg.classList.add('show');
+      }, 400);
+      return;
+    }
+    finishQuiz();
+    return;
+  }
+
+  animateNext(currentIndex + 1);
+}
+
+function goTo(idx) {
+  if (idx < 0 || idx >= questions.length) return;
+  animateNext(idx);
+}
+
+function animateNext(idx) {
+  const card = document.getElementById('question-card');
+  const goingForward = idx > currentIndex;
+  card.style.animation = 'none';
+  card.classList.add(goingForward ? 'slide-out-left' : 'slide-out-right');
+  setTimeout(() => {
+    card.style.animation = '';
+    card.classList.remove('slide-out-left','slide-out-right');
+    renderQuestion(idx, goingForward ? 'forward' : 'back');
+  }, 280);
+}
+
+// ── FINISH ──────────────────────────────────────────────────────
+function finishQuiz() {
+  document.getElementById('stage').style.display = 'none';
+  document.getElementById('dot-nav').style.display = 'none';
+
+  let score = 0;
+  questions.forEach((q, i) => { if (userAnswers[i] === q.answer) score++; });
+
+  showReview(score);
+  showCertificate(score);
+
+  setTimeout(() => document.getElementById('review-section').scrollIntoView({ behavior:'smooth' }), 200);
+}
+
+// ── REVIEW ──────────────────────────────────────────────────────
+function showReview(score) {
+  document.getElementById('review-section').style.display = 'block';
+  const wrap = document.getElementById('review-cards');
+  wrap.innerHTML = '';
+
+  questions.forEach((q, i) => {
+    const ua = userAnswers[i];
+    const correct = ua === q.answer;
+    const card = document.createElement('div');
+    card.className = `review-card ${correct ? 'correct-card' : 'wrong-card'}`;
+    card.style.animationDelay = `${i * 0.04}s`;
+
+    const yourAns = ua !== null ? q.options[ua] : '(no answer)';
+    const rightAns = q.options[q.answer];
+
+    card.innerHTML = `
+      <div class="review-q">
+        <span class="review-qnum">Q${i+1}</span>
+        <span>${q.q}</span>
+        <span class="review-result-icon">${correct ? '✅' : '❌'}</span>
+      </div>
+      <div class="review-answers">
+        <div class="review-your">Your answer: <span style="color:${correct?'var(--green)':'var(--red)'}">${yourAns}</span></div>
+        ${!correct ? `<div class="review-correct-ans">✅ Correct answer: ${rightAns}</div>` : ''}
+      </div>
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+// ── CERTIFICATE ─────────────────────────────────────────────────
+function showCertificate(score) {
+  const pass = score >= 18;
+  const pct  = Math.round(score / 20 * 100);
+
+  document.getElementById('certificate-section').style.display = 'block';
+  document.getElementById('cert-ribbon').className = `cert-ribbon ${pass?'pass':'fail'}`;
+  document.getElementById('cert-emoji').textContent = pass ? '🏆' : '📋';
+  document.getElementById('cert-title').textContent = pass ? 'You Passed! Amazing Work!' : 'Nice Try — Keep Studying!';
+  document.getElementById('cert-title').className = `cert-title ${pass?'pass':'fail'}`;
+  document.getElementById('cert-ring').className = `cert-score-ring ${pass?'pass':'fail'}`;
+  document.getElementById('ring-score').textContent = `${score}/20`;
+
+  let medals = '';
+  if (score === 20)     medals = '🥇🥇🥇 PERFECT SCORE! 🥇🥇🥇';
+  else if (score >= 18) medals = '🥇 Gold Level Pass!';
+  else if (score >= 15) medals = '🥈 Silver — Almost There!';
+  else                  medals = '🥉 Bronze — You Can Do It!';
+  document.getElementById('cert-medals').textContent = medals;
+
+  if (pass) {
+    document.getElementById('cert-message').innerHTML = `
+      Incredible! You scored <strong>${score} out of 20</strong> (${pct}%)!<br>
+      You've demonstrated strong U.S. civics knowledge and are
+      <strong>officially cleared to advance to the real Bar Exam review test.</strong> Go get 'em! 🚀
+    `;
+    document.getElementById('cert-stars').textContent = '⭐⭐⭐⭐⭐';
+    launchConfetti();
+  } else {
+    document.getElementById('cert-message').innerHTML = `
+      You scored <strong>${score} out of 20</strong> (${pct}%).<br>
+      A score of <strong>18 or higher</strong> is needed to advance. Review your answers above,
+      then try again — you've got this! 💪
+    `;
+    document.getElementById('cert-stars').textContent = '';
+    document.getElementById('retry-btn').style.display = 'inline-block';
+  }
+}
+
+// ── TRACKER / PROGRESS ──────────────────────────────────────────
+function updateTracker() {
+  let correct = 0, wrong = 0, left = 0;
+  questions.forEach((q, i) => {
+    if (userAnswers[i] === null) left++;
+    else if (userAnswers[i] === q.answer) correct++;
+    else wrong++;
+  });
+  document.getElementById('score-correct').textContent = correct;
+  document.getElementById('score-wrong').textContent   = wrong;
+  document.getElementById('score-left').textContent    = left;
+}
+
+function updateProgress() {
+  const answered = userAnswers.filter(a => a !== null).length;
+  const pct = (answered / questions.length) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${answered} of ${questions.length} answered`;
+}
+
+// ── RETRY ───────────────────────────────────────────────────────
+function retryQuiz() {
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  setTimeout(() => initQuiz(shuffle(allQuestions)), 400);
+}
+
+// ── CONFETTI ────────────────────────────────────────────────────
+function launchConfetti() {
+  const canvas = document.getElementById('confetti-canvas');
+  const ctx    = canvas.getContext('2d');
+  canvas.width  = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const colors  = ['#f59e0b','#1a56db','#e02424','#16a34a','#7c3aed','#ec4899','#ffffff'];
+  const pieces  = Array.from({length:200}, () => ({
+    x: Math.random()*canvas.width, y: -20-Math.random()*200,
+    w: 8+Math.random()*10, h: 8+Math.random()*10,
+    color: colors[Math.floor(Math.random()*colors.length)],
+    circle: Math.random()>.5,
+    vy: 2+Math.random()*4, vx: (Math.random()-.5)*3,
+    rot: Math.random()*360, rotV: (Math.random()-.5)*8,
+    opacity: 1
+  }));
+  (function draw() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    let alive = false;
+    pieces.forEach(p => {
+      p.y+=p.vy; p.x+=p.vx; p.rot+=p.rotV;
+      if (p.y>canvas.height*.7) p.opacity-=.015;
+      if (p.opacity>0) alive=true;
+      ctx.save(); ctx.globalAlpha=Math.max(0,p.opacity);
+      ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color;
+      if (p.circle) { ctx.beginPath(); ctx.arc(0,0,p.w/2,0,Math.PI*2); ctx.fill(); }
+      else ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if (alive) requestAnimationFrame(draw);
+    else ctx.clearRect(0,0,canvas.width,canvas.height);
+  })();
+}
+
+// ── POP EMOJI ───────────────────────────────────────────────────
+function spawnPop(el, emoji) {
+  if (!el) return;
+  const rect = el.getBoundingClientRect();
+  const pop  = document.createElement('div');
+  pop.className = 'pop';
+  pop.textContent = emoji;
+  pop.style.left = (rect.left+rect.width/2)+'px';
+  pop.style.top  = (rect.top+window.scrollY)+'px';
+  document.body.appendChild(pop);
+  setTimeout(()=>pop.remove(), 1000);
+}
+
+// ── START ───────────────────────────────────────────────────────
+initQuiz([...allQuestions]);
+</script>
+</body>
+</html>
